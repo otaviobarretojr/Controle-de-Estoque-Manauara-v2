@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estoque Manauara</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><div class="brand"><div class="logo">S</div><div><b>Estoque Manauara</b><small>Central de abastecimento</small></div></div><div class="top-actions"><span class="sync">● Sincronizado localmente</span><button class="btn primary" id="globalImportBtn">↑ Importar inventário</button><input type="file" id="inventoryFile" accept=".xls,.html,.htm" hidden></div></header>
+<div class="layout">
+<aside><div class="section-label">OPERAÇÃO</div><div class="nav" id="nav">
+<button data-view="overview" class="active">▦ &nbsp; Visão geral</button>
+<button data-view="low">↓ &nbsp; Estoque baixo <span class="badge" id="lowBadge">0</span></button>
+<button data-view="products">≡ &nbsp; Produtos <span class="badge" id="prodBadge">0</span></button>
+<button data-view="portfolio">▣ &nbsp; Portfólio</button>
+<button data-view="presales">◈ &nbsp; Pré-vendas <span class="badge" id="preBadge">0</span></button>
+<button data-view="requests">↗ &nbsp; Solicitações <span class="badge" id="reqBadge">0</span></button>
+</div><div class="aside-foot"><span class="dot"></span><b>Base atual</b><div id="baseDate" style="margin:5px 0 0 14px">Nenhum inventário</div></div></aside>
+<main>
+<section id="view-overview" class="view"><div class="eyebrow">INVENTÁRIO • EMPRESA 9</div><div class="title-row"><div><h1>Visão geral do estoque</h1><p class="subtitle">Acompanhe disponibilidade, variedade e valor do inventário em um só lugar.</p></div><div><label class="muted">Estoque mínimo</label><input id="minStock" type="number" min="0" value="3" class="input" style="width:90px;margin-top:4px"></div></div><div class="cards" id="overviewCards"></div><div class="panel"><div class="toolbar"><input class="input search" id="overviewSearch" placeholder="Buscar produto, SKU ou referência"><select class="select" id="overviewStatus"><option value="all">Todas as situações</option><option value="good">Disponível</option><option value="low">Estoque baixo</option></select></div><div id="overviewTable"></div></div></section>
+<section id="view-low" class="view hidden"><div class="eyebrow">INVENTÁRIO</div><h1>Estoque baixo</h1><p class="subtitle">Produtos ativos com saldo igual ou abaixo do estoque mínimo.</p><div class="panel" style="margin-top:24px"><div id="lowTable"></div></div></section>
+<section id="view-products" class="view hidden"><div class="eyebrow">CADASTRO</div><h1>Produtos</h1><p class="subtitle">Base importada do inventário. Desative itens sem removê-los da origem.</p><div class="panel" style="margin-top:24px"><div class="toolbar"><input class="input search" id="productSearch" placeholder="Buscar produto, SKU ou referência"><select class="select" id="productState"><option value="all">Ativos e desativados</option><option value="active">Ativos</option><option value="disabled">Desativados</option></select></div><div id="productsTable"></div></div></section>
+<section id="view-portfolio" class="view hidden"><div class="eyebrow">CONFORMIDADE</div><h1>Portfólio</h1><p class="subtitle">Módulo preservado para receber a base oficial do portfólio atual.</p><div class="empty"><b>Estrutura reservada</b>Esta nova base não altera a lógica existente do Portfólio. Os vínculos continuarão independentes dos vínculos de Pré-vendas.</div></section>
+<section id="view-presales" class="view hidden"><div class="eyebrow">RESERVAS • CRUZAMENTO COM ESTOQUE</div><div class="title-row"><div><h1>Pré-vendas</h1><p class="subtitle">Compare automaticamente a demanda reservada com o saldo físico atual.</p></div><button class="btn primary" id="preImportBtn">↑ Importar pré-vendas</button><input type="file" id="preFile" accept=".csv" hidden></div>
+<div class="import-zone"><div><b>Bases independentes</b><p>A importação de pré-vendas não altera o inventário. Uma nova importação de estoque recalcula a cobertura automaticamente.</p><span class="file-note" id="preImportInfo">Nenhum relatório de pré-vendas importado.</span></div><button class="btn secondary" id="clearPreBtn">Limpar pré-vendas</button></div>
+<div class="cards" id="preCards"></div><div class="panel"><div class="toolbar"><input class="input search" id="preSearch" placeholder="Buscar modelo, memória ou cor"><select class="select" id="preStatus"><option value="all">Todas as situações</option><option value="good">Atende</option><option value="partial">Déficit</option><option value="unlinked">Não vinculado</option></select></div><div id="preTable"></div></div></section>
+<section id="view-requests" class="view hidden"><div class="eyebrow">ABASTECIMENTO</div><h1>Solicitações</h1><p class="subtitle">Itens solicitados por filial, sem duplicar o mesmo produto na mesma origem.</p><div class="panel" style="margin-top:24px"><div id="requestsTable"></div></div></section>
+</main></div>
+<div id="linkModal" class="modal hidden"><div class="modal-card"><h3>Editar vínculo</h3><p class="subtitle" id="linkTarget"></p><div class="modal-grid"><input id="linkSearch" class="input" placeholder="Pesquisar produto da aba Produtos"><button id="unlinkBtn" class="btn danger">Remover vínculo</button></div><div id="linkList" class="link-list"></div><div class="actions"><button id="closeLink" class="btn secondary">Cancelar</button><button id="saveLink" class="btn primary">Salvar vínculo</button></div></div></div>
+<script src="app.js"></script>
+</body></html>
