@@ -9,8 +9,7 @@ portfolioAnalysis=function(){
     .map(item=>{
       const linkedId=state.portfolioLinks[item.id];
       const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
-      const syncedName=linkedProduct?linkedProduct.name:item.name;
-      return {...item,name:syncedName};
+      return {...item,name:linkedProduct?linkedProduct.name:item.name};
     });
 };
 
@@ -78,16 +77,15 @@ window.editPortfolioName=function(id){
   if(!item)return;
   openPortfolioLink(id);
   const target=document.querySelector('#linkTarget');
-  if(target)target.textContent=`${item.name} · selecione o nome correto da aba Produtos`;
+  if(target)target.textContent=`${item.name} · selecione o produto correto da aba Produtos`;
 };
 
 const baseSaveLinkHandler=document.querySelector('#saveLink')?.onclick;
 if(document.querySelector('#saveLink')){
   document.querySelector('#saveLink').onclick=()=>{
     if(linkContext==='portfolio'&&linkKey&&selectedLink){
-      const product=state.inventory.find(p=>invId(p)===selectedLink);
       state.portfolioLinks[linkKey]=selectedLink;
-      if(product)state.portfolioNames[linkKey]=product.name;
+      delete state.portfolioNames[linkKey];
       save();
       closeModal();
       return;
