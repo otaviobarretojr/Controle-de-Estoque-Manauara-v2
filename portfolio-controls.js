@@ -1,4 +1,4 @@
-// Controles adicionais do Portfólio: exclusão persistente, restauração e edição do nome exibido.
+// Controles adicionais do Portfólio: exclusão persistente, restauração e nome sincronizado com Produtos.
 state.portfolioHidden=state.portfolioHidden||{};
 state.portfolioNames=state.portfolioNames||{};
 
@@ -6,7 +6,13 @@ const basePortfolioAnalysis=portfolioAnalysis;
 portfolioAnalysis=function(){
   return basePortfolioAnalysis()
     .filter(item=>!state.portfolioHidden[item.id])
-    .map(item=>({...item,name:state.portfolioNames[item.id]||item.name}));
+    .map(item=>{
+      // Quando houver vínculo manual, o nome exibido vem sempre da aba Produtos.
+      const linkedId=state.portfolioLinks[item.id];
+      const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
+      const syncedName=linkedProduct?linkedProduct.name:(state.portfolioNames[item.id]||item.name);
+      return {...item,name:syncedName};
+    });
 };
 
 const baseRenderPortfolio=renderPortfolio;
@@ -26,16 +32,15 @@ renderPortfolio=function(){
   const restoreBtn=document.getElementById('restorePortfolioBtn');
   if(restoreBtn)restoreBtn.textContent=hiddenIds.length?`Restaurar removidos (${hiddenIds.length})`:'Restaurar removidos';
 
-  // Oculta a coluna visual de Vínculo, mantendo toda a lógica de associação ativa em segundo plano.
+  // Mantém a coluna de vínculo oculta. O vínculo continua ativo internamente.
   const table=document.querySelector('#portfolioTable table');
   if(table){
     const headCells=[...table.querySelectorAll('thead th')];
-    const linkIndex=headCells.findIndex(th=>th.textContent.trim().toLowerCase()==='vínculo'||th.textContent.trim().toLowerCase()==='vinculo');
+    const linkIndex=headCells.findIndex(th=>['vínculo','vinculo'].includes(th.textContent.trim().toLowerCase()));
     if(linkIndex>=0){
       headCells[linkIndex].style.display='none';
       table.querySelectorAll('tbody tr').forEach(tr=>{
-        const cells=tr.children;
-        if(cells[linkIndex])cells[linkIndex].style.display='none';
+        if(tr.children[linkIndex])tr.children[linkIndex].style.display='none';
       });
     }
   }
@@ -49,11 +54,13 @@ renderPortfolio=function(){
     const td=edit.closest('td');
     if(!td)return;
 
+    // Editar nome agora usa a própria seleção da aba Produtos.
     if(!td.querySelector('.portfolio-name-btn')){
       const rename=document.createElement('button');
       rename.className='btn small secondary portfolio-name-btn';
       rename.style.marginRight='6px';
       rename.textContent='Editar nome';
+      rename.title='Escolher o produto correspondente da aba Produtos';
       rename.onclick=()=>editPortfolioName(id);
       td.insertBefore(rename,edit);
     }
@@ -69,23 +76,52 @@ renderPortfolio=function(){
   });
 };
 
+// O nome não é mais digitado livremente: ele é escolhido na aba Produtos.
 window.editPortfolioName=function(id){
   const item=PORTFOLIO.find(x=>x.id===id);
   if(!item)return;
-  const current=state.portfolioNames[id]||item.name;
-  const next=prompt('Nome exibido no Portfólio:',current);
-  if(next===null)return;
-  const clean=next.trim();
-  if(!clean){alert('O nome não pode ficar vazio.');return;}
-  if(clean===item.name)delete state.portfolioNames[id];
-  else state.portfolioNames[id]=clean;
-  save();
+  openPortfolioLink(id);
+  const target=document.querySelector('#linkTarget');
+  if(target)target.textContent=`${item.name} · selecione o nome correto da aba Produtos`;
 };
+
+// Intercepta o salvar do modal: para Portfólio, nome e vínculo são gravados juntos.
+const baseSaveLinkHandler=document.querySelector('#saveLink')?.onclick;
+if(document.querySelector('#saveLink')){
+  document.querySelector('#saveLink').onclick=()=>{
+    if(linkContext==='portfolio'&&linkKey&&selectedLink){
+      const product=state.inventory.find(p=>invId(p)===selectedLink);
+      state.portfolioLinks[linkKey]=selectedLink;
+      if(product)state.portfolioNames[linkKey]=product.name;
+      save();
+      closeModal();
+      return;
+    }
+    if(typeof baseSaveLinkHandler==='function')baseSaveLinkHandler();
+  };
+}
+
+// Se remover o vínculo, volta ao nome oficial do item do Portfólio.
+const baseUnlinkHandler=document.querySelector('#unlinkBtn')?.onclick;
+if(document.querySelector('#unlinkBtn')){
+  document.querySelector('#unlinkBtn').onclick=()=>{
+    if(linkContext==='portfolio'&&linkKey){
+      delete state.portfolioLinks[linkKey];
+      delete state.portfolioNames[linkKey];
+      save();
+      closeModal();
+      return;
+    }
+    if(typeof baseUnlinkHandler==='function')baseUnlinkHandler();
+  };
+}
 
 window.removePortfolioItem=function(id){
   const item=PORTFOLIO.find(x=>x.id===id);
   if(!item)return;
-  const displayName=state.portfolioNames[id]||item.name;
+  const linkedId=state.portfolioLinks[id];
+  const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
+  const displayName=linkedProduct?linkedProduct.name:(state.portfolioNames[id]||item.name);
   if(!confirm(`Excluir "${displayName}" do Portfólio?\n\nEle deixará de entrar no cálculo de conformidade e não voltará após importar uma nova planilha.`))return;
   state.portfolioHidden[id]=true;
   save();
@@ -94,7 +130,11 @@ window.removePortfolioItem=function(id){
 window.restorePortfolioItems=function(){
   const removed=PORTFOLIO.filter(item=>state.portfolioHidden[item.id]);
   if(!removed.length){alert('Não há itens removidos do Portfólio.');return;}
-  const list=removed.map((item,i)=>`${i+1}. ${state.portfolioNames[item.id]||item.name}`).join('\n');
+  const list=removed.map((item,i)=>{
+    const linkedId=state.portfolioLinks[item.id];
+    const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
+    return `${i+1}. ${linkedProduct?linkedProduct.name:(state.portfolioNames[item.id]||item.name)}`;
+  }).join('\n');
   const choice=prompt(`Itens removidos:\n\n${list}\n\nDigite o número do item para restaurar ou 0 para restaurar todos:`,'0');
   if(choice===null)return;
   const n=Number(choice);
@@ -105,5 +145,4 @@ window.restorePortfolioItems=function(){
   }else alert('Opção inválida.');
 };
 
-// Recalcula a aba após carregar este complemento.
 renderPortfolio();
