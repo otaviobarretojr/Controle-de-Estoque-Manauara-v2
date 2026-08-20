@@ -7,10 +7,9 @@ portfolioAnalysis=function(){
   return basePortfolioAnalysis()
     .filter(item=>!state.portfolioHidden[item.id])
     .map(item=>{
-      // Quando houver vínculo manual, o nome exibido vem sempre da aba Produtos.
       const linkedId=state.portfolioLinks[item.id];
       const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
-      const syncedName=linkedProduct?linkedProduct.name:(state.portfolioNames[item.id]||item.name);
+      const syncedName=linkedProduct?linkedProduct.name:item.name;
       return {...item,name:syncedName};
     });
 };
@@ -32,7 +31,6 @@ renderPortfolio=function(){
   const restoreBtn=document.getElementById('restorePortfolioBtn');
   if(restoreBtn)restoreBtn.textContent=hiddenIds.length?`Restaurar removidos (${hiddenIds.length})`:'Restaurar removidos';
 
-  // Mantém a coluna de vínculo oculta. O vínculo continua ativo internamente.
   const table=document.querySelector('#portfolioTable table');
   if(table){
     const headCells=[...table.querySelectorAll('thead th')];
@@ -54,7 +52,6 @@ renderPortfolio=function(){
     const td=edit.closest('td');
     if(!td)return;
 
-    // Editar nome agora usa a própria seleção da aba Produtos.
     if(!td.querySelector('.portfolio-name-btn')){
       const rename=document.createElement('button');
       rename.className='btn small secondary portfolio-name-btn';
@@ -76,7 +73,6 @@ renderPortfolio=function(){
   });
 };
 
-// O nome não é mais digitado livremente: ele é escolhido na aba Produtos.
 window.editPortfolioName=function(id){
   const item=PORTFOLIO.find(x=>x.id===id);
   if(!item)return;
@@ -85,7 +81,6 @@ window.editPortfolioName=function(id){
   if(target)target.textContent=`${item.name} · selecione o nome correto da aba Produtos`;
 };
 
-// Intercepta o salvar do modal: para Portfólio, nome e vínculo são gravados juntos.
 const baseSaveLinkHandler=document.querySelector('#saveLink')?.onclick;
 if(document.querySelector('#saveLink')){
   document.querySelector('#saveLink').onclick=()=>{
@@ -101,7 +96,6 @@ if(document.querySelector('#saveLink')){
   };
 }
 
-// Se remover o vínculo, volta ao nome oficial do item do Portfólio.
 const baseUnlinkHandler=document.querySelector('#unlinkBtn')?.onclick;
 if(document.querySelector('#unlinkBtn')){
   document.querySelector('#unlinkBtn').onclick=()=>{
@@ -121,7 +115,7 @@ window.removePortfolioItem=function(id){
   if(!item)return;
   const linkedId=state.portfolioLinks[id];
   const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
-  const displayName=linkedProduct?linkedProduct.name:(state.portfolioNames[id]||item.name);
+  const displayName=linkedProduct?linkedProduct.name:item.name;
   if(!confirm(`Excluir "${displayName}" do Portfólio?\n\nEle deixará de entrar no cálculo de conformidade e não voltará após importar uma nova planilha.`))return;
   state.portfolioHidden[id]=true;
   save();
@@ -133,7 +127,7 @@ window.restorePortfolioItems=function(){
   const list=removed.map((item,i)=>{
     const linkedId=state.portfolioLinks[item.id];
     const linkedProduct=linkedId?state.inventory.find(p=>invId(p)===linkedId):null;
-    return `${i+1}. ${linkedProduct?linkedProduct.name:(state.portfolioNames[item.id]||item.name)}`;
+    return `${i+1}. ${linkedProduct?linkedProduct.name:item.name}`;
   }).join('\n');
   const choice=prompt(`Itens removidos:\n\n${list}\n\nDigite o número do item para restaurar ou 0 para restaurar todos:`,'0');
   if(choice===null)return;
